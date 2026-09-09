@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="soft">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive Rave ALS case report form renderer">
+  <title>Formcraft — ALS CRF Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/xlsx.full.min.js"></script>
+  <script defer src="study-data.js"></script>
+  <script defer src="rules-data.js"></script>
+  <script defer src="app.js"></script>
+  <script defer src="uploader.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#AE_MIX" aria-label="Formcraft home">
+        <span class="brand-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" focusable="false"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 96C576 204.1 499.4 294.3 397.6 315.4C389.7 257.3 363.6 205 325.1 164.5C365.2 104 433.9 64 512 64L544 64C561.7 64 576 78.3 576 96zM64 160C64 142.3 78.3 128 96 128L128 128C251.7 128 352 228.3 352 352L352 544C352 561.7 337.7 576 320 576C302.3 576 288 561.7 288 544L288 384C164.3 384 64 283.7 64 160z"/></svg></span>
+        <span><b>Formcraft</b><small>Clinical form studio</small></span>
+      </a>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+        <input id="globalSearch" type="search" placeholder="Find a form by name or OID" autocomplete="off">
+        <kbd>/</kbd>
+      </div>
+      <div class="topbar-actions">
+        <label class="theme-picker" for="themeSelect">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-.7a1.4 1.4 0 0 1 0-2.8H15A6 6 0 0 0 15 3h-3Z"/><circle cx="7.5" cy="10" r=".7"/><circle cx="10" cy="6.8" r=".7"/><circle cx="6.8" cy="14" r=".7"/></svg>
+          <span>Theme</span>
+          <select id="themeSelect" aria-label="Color theme">
+            <option value="soft">Soft calm</option>
+            <option value="coral">Performance Coral</option>
+          </select>
+        </label>
+        <button class="button button-upload" id="uploadButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+          Upload ALS
+        </button>
+        <button class="button button-ghost" id="rulesButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v5a3 3 0 0 0 3 3h6m0 0-3-3m3 3-3 3m6-11v5a3 3 0 0 1-3 3"/></svg>
+          <span class="status-dot"></span> Dynamics
+          <span class="count-pill" id="ruleCount">0</span>
+        </button>
+      </div>
+    </header>
+
+    <aside class="sidebar" aria-label="Forms navigation">
+      <div class="sidebar-heading">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h4l2 2h7A1.5 1.5 0 0 1 20 7.5v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-12Z"/></svg>Form library</span>
+        <button class="text-button" id="inactiveFormsButton" type="button" aria-pressed="false">Show inactive</button>
+      </div>
+      <nav class="form-list" id="formList" aria-label="Available forms"></nav>
+      <div class="study-card">
+        <span class="study-kicker"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5m-14 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>Source study</span>
+        <strong id="studyName">Loading ALS…</strong>
+        <span id="sourceFile">—</span>
+        <div class="study-stats">
+          <span><b id="formCount">0</b> forms</span>
+          <span><b id="fieldCount">0</b> fields</span>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <span class="source-health"><i></i> ALS data loaded</span>
+        <span id="dictionaryCount">0 dictionaries</span>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="form-hero" id="formHero">
+        <div>
+          <div class="breadcrumb"><span>Forms</span><i>/</i><b id="formOid">—</b></div>
+          <h1 id="formTitle">Select a form</h1>
+          <div class="form-meta" id="formMeta"></div>
+        </div>
+        <div class="form-actions">
+          <button class="button button-secondary" id="resetButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7v5h5M5.8 17A8 8 0 1 0 6 6.8L4 9"/></svg>Reset form</button>
+          <button class="button button-primary" id="printButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7v-6Z"/><path d="M17.5 12h.01"/></svg>Print preview</button>
+        </div>
+      </section>
+
+      <section class="control-deck" aria-label="Form display controls">
+        <label class="field-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+          <input id="fieldSearch" type="search" placeholder="Search fields in this form">
+        </label>
+        <div class="segmented" aria-label="Field filters">
+          <button id="inactiveFieldsButton" type="button" aria-pressed="false">Inactive</button>
+          <button id="technicalFieldsButton" type="button" aria-pressed="false">Technical</button>
+          <button id="metadataButton" type="button" aria-pressed="false">Metadata</button>
+        </div>
+        <div class="field-total" id="visibleFieldCount">0 fields</div>
+      </section>
+
+      <div class="rule-banner" id="ruleBanner" hidden>
+        <span class="rule-pulse"></span>
+        <div><b id="ruleBannerTitle">Dynamic rules active</b><span id="ruleBannerText"></span></div>
+        <button type="button" id="openRulesInline">Review rules</button>
+      </div>
+
+      <section class="form-canvas" id="formCanvas" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div class="print-preview-bar" id="printPreviewBar" hidden>
+    <div class="print-preview-copy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7v-6Z"/></svg><span><strong>Print preview</strong><small>Review the CRF, then print or save it as PDF.</small></span></div>
+    <div class="print-preview-actions"><button class="button button-secondary" id="closePrintPreview" type="button">Exit preview</button><button class="button button-primary" id="printNowButton" type="button">Print / Save PDF</button></div>
+  </div>
+
+  <aside class="inspector" id="inspector" aria-hidden="true">
+    <header><div><span>Field inspector</span><strong id="inspectorOid">—</strong></div><button class="icon-button" id="closeInspector" type="button" aria-label="Close inspector">×</button></header>
+    <div id="inspectorBody"></div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <dialog class="rules-dialog" id="rulesDialog">
+    <form method="dialog" class="dialog-shell">
+      <header>
+        <div><span class="dialog-kicker">Conditional display engine</span><h2>Dynamic rules</h2></div>
+        <button class="icon-button" value="cancel" aria-label="Close dynamics dialog">×</button>
+      </header>
+      <p>Paste YAML to replace the editor, or load a YAML file to merge rules by form and rule ID. Review the result, then apply it to the current CRF.</p>
+      <div class="rule-status" id="ruleStatus"></div>
+      <textarea id="rulesEditor" spellcheck="false" aria-label="Dynamic rules YAML"></textarea>
+      <footer>
+        <label class="file-button">Load YAML<input id="rulesFile" type="file" accept=".yaml,.yml,text/yaml"></label>
+        <a class="button button-ghost" href="rules.yaml" download>Download sample</a>
+        <span class="dialog-spacer"></span>
+        <button class="button button-secondary" value="cancel">Cancel</button>
+        <button class="button button-primary" id="applyRulesButton" type="button">Apply rules</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="upload-dialog" id="uploadDialog">
+    <form method="dialog" class="upload-shell">
+      <header>
+        <div><span class="dialog-kicker">Study metadata</span><h2>Open an ALS workbook</h2></div>
+        <button class="icon-button" value="cancel" aria-label="Close uploader">×</button>
+      </header>
+      <p>The workbook is parsed only in this browser. It is not sent to a server.</p>
+      <label class="upload-dropzone" id="alsDropzone">
+        <input id="alsFile" type="file" accept=".xlsx,.xls,.xlsm,.xlsb">
+        <span class="upload-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+        </span>
+        <strong>Choose or drop an ALS file</strong>
+        <span>Required sheets: Forms, Fields, DataDictionaryEntries</span>
+      </label>
+      <div class="upload-status" id="uploadStatus" role="status" aria-live="polite">Ready for an Excel workbook.</div>
+      <footer><span>Supported: XLSX, XLS, XLSM, XLSB</span><button class="button button-secondary" value="cancel">Cancel</button></footer>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

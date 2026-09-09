@@ -1,0 +1,52 @@
+form: AE_MIX
+version: 1
+rules:
+  - id: serious_adverse_event_details
+    description: Show SAE detail fields when the adverse event is serious.
+    when:
+      field: AESER1
+      operator: equals
+      value: "Yes"
+    then:
+      show:
+        - AEODAT1
+        - AESDTH1
+        - AESLIFE1
+        - AESHOSP1
+        - AESDISAB1
+        - AESCONG1
+        - AESMIE1
+    otherwise:
+      hide:
+        - AEODAT1
+        - AESDTH1
+        - AESLIFE1
+        - AESHOSP1
+        - AESDISAB1
+        - AESCONG1
+        - AESMIE1
+      clear:
+        - AEODAT1
+        - AESDTH1
+        - AESLIFE1
+        - AESHOSP1
+        - AESDISAB1
+        - AESCONG1
+        - AESMIE1
+  - id: hospitalization_dates
+    description: Show hospitalization dates when the serious event resulted in hospitalization.
+    when:
+      field: AESHOSP1
+      operator: equals
+      value: "Yes"
+    then:
+      show:
+        - AEHSPDAT1
+        - AEDISDAT1
+    otherwise:
+      hide:
+        - AEHSPDAT1
+        - AEDISDAT1
+      clear:
+        - AEHSPDAT1
+        - AEDISDAT1
